@@ -1,0 +1,647 @@
+/* ===== ProjectVault — Hot Pastel Organic Minimalism ===== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* ── Design Tokens ─────────────────────────────────────────────────────────── */
+:root {
+  --bg:         #FFEEE5;
+  --surface:    #FFFFFF;
+  --surface-2:  #FFE4D8;
+  --coral:      #E07060;
+  --coral-dk:   #C85F50;
+  --terracotta: #8E5E4E;
+  --terra-dk:   #6B4A3E;
+  --sand:       #F2D9CC;
+  --peach:      #F5C4B4;
+  --sidebar:    #FFF5F0;
+  --sidebar-h:  #FFE4D8;
+  --text-1:     #2C1810;
+  --text-2:     #6B4A3E;
+  --text-3:     #7A6560;
+  --border:     rgba(142, 94, 78, 0.18);
+  --border-act: #E88D7D;
+  --shadow-sm:  0 1px 4px rgba(142, 94, 78, 0.1);
+  --shadow-md:  0 3px 12px rgba(142, 94, 78, 0.13);
+
+  /* legacy aliases */
+  --navy:     #2C1810;
+  --navy-h:   #3D2419;
+  --green:    #8E5E4E;
+  --yellow:   #C4A882;
+  --red:      #CF6F61;
+  --bg-card:  #FFFFFF;
+  --bd:       rgba(142, 94, 78, 0.18);
+  --t1: #2C1810;
+  --t2: #6B4A3E;
+  --t3: #7A6560;
+  --sidebar-t1: #2C1810;
+  --sidebar-t2: #E88D7D;
+}
+
+/* ── Chrome reset ──────────────────────────────────────────────────────────── */
+#MainMenu, footer, header     { visibility: hidden; }
+[data-testid="stSidebarNav"]  { display: none !important; }
+*, *::before, *::after        { box-sizing: border-box; }
+
+html, body, [class*="css"], .stApp, .stMarkdown, .stText,
+div, p, span, h1, h2, h3, h4, h5, label, button, input, textarea, select {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+}
+
+/* ── Expander icon fix (prevents Material Symbols name from rendering as text) */
+[data-testid="stExpanderToggleIcon"] {
+  font-size: 0 !important;
+  line-height: 0 !important;
+  overflow:   hidden !important;
+}
+[data-testid="stExpanderToggleIcon"] svg {
+  width:     18px !important;
+  height:    18px !important;
+  display:   block !important;
+  color:     #A88F87 !important;
+}
+
+/* ── Suppress Material Symbols glyph leakage everywhere (e.g. sidebar collapse) */
+[data-testid="stSidebarCollapseButton"] *,
+[data-testid="stSidebarCollapsedControl"] *,
+button[kind="headerNoPadding"] * {
+  font-size: 0 !important;
+}
+[data-testid="stSidebarCollapseButton"] svg,
+[data-testid="stSidebarCollapsedControl"] svg,
+button[kind="headerNoPadding"] svg {
+  font-size: 1rem !important;
+  width: 18px !important;
+  height: 18px !important;
+}
+
+/* ── App background ────────────────────────────────────────────────────────── */
+.stApp,
+[data-testid="stAppViewContainer"],
+[data-testid="stAppViewBlockContainer"],
+section.main { background: #FFEEE5 !important; }
+.block-container {
+  padding-top:    1.5rem;
+  padding-bottom: 2.5rem;
+  max-width:      1300px;
+}
+
+/* ── Scrollbar ─────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar             { width: 4px; height: 4px; }
+::-webkit-scrollbar-track       { background: transparent; }
+::-webkit-scrollbar-thumb       { background: rgba(142, 94, 78, 0.25); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(142, 94, 78, 0.4); }
+
+/* ── Sidebar ───────────────────────────────────────────────────────────────── */
+[data-testid="stSidebar"] {
+  background:   #FFF5F0 !important;
+  border-right: 1px solid rgba(142, 94, 78, 0.2) !important;
+}
+[data-testid="stSidebar"] .block-container { padding-top: 1.75rem; }
+
+[data-testid="stSidebar"] a[data-testid="stPageLink-NavLink"] {
+  background:    transparent !important;
+  border:        none !important;
+  border-radius: 10px !important;
+  color:         #7A6560 !important;
+  font-size:     0.85rem !important;
+  font-weight:   500 !important;
+  padding:       0.45rem 0.8rem !important;
+  display:       block !important;
+  margin-bottom: 2px !important;
+  transition:    color 150ms ease, background 150ms ease !important;
+}
+[data-testid="stSidebar"] a[data-testid="stPageLink-NavLink"]:hover {
+  color:      #2C1810 !important;
+  background: rgba(232, 141, 125, 0.1) !important;
+}
+
+/* Collapse ALL gaps between sidebar elements */
+[data-testid="stSidebar"] div.stButton,
+[data-testid="stSidebar"] div.stMarkdown,
+[data-testid="stSidebar"] div.element-container {
+  margin-bottom: 0 !important;
+  margin-top:    0 !important;
+  padding-top:   0 !important;
+  padding-bottom:0 !important;
+}
+
+/* Sidebar secondary nav buttons — button wrapper */
+[data-testid="stSidebar"] div.stButton > button[kind="secondary"] {
+  background:      transparent !important;
+  border:          none !important;
+  border-radius:   8px !important;
+  color:           #6B4A3E !important;
+  font-size:       0.84rem !important;
+  font-weight:     500 !important;
+  text-align:      left !important;
+  justify-content: flex-start !important;
+  align-items:     center !important;
+  padding:         0.38rem 0.8rem !important;
+  height:          auto !important;
+  line-height:     1.4 !important;
+  box-shadow:      none !important;
+  width:           100% !important;
+  min-height:      0 !important;
+  transition:      color 120ms ease, background 120ms ease !important;
+}
+/* Target the inner div and p that Streamlit wraps button text in */
+[data-testid="stSidebar"] div.stButton > button[kind="secondary"] > div,
+[data-testid="stSidebar"] div.stButton > button[kind="secondary"] > div > p {
+  text-align:      left !important;
+  justify-content: flex-start !important;
+  width:           100% !important;
+  margin:          0 !important;
+  padding:         0 !important;
+  font-size:       0.84rem !important;
+  font-weight:     500 !important;
+  color:           inherit !important;
+  line-height:     1.4 !important;
+}
+[data-testid="stSidebar"] div.stButton > button[kind="secondary"]:hover {
+  color:       #2C1810 !important;
+  background:  rgba(232, 141, 125, 0.1) !important;
+  transform:   none !important;
+  box-shadow:  none !important;
+}
+[data-testid="stSidebar"] div.stButton > button[kind="secondary"]:hover > div > p {
+  color: #2C1810 !important;
+}
+
+/* Sidebar primary button — Invite Member CTA */
+[data-testid="stSidebar"] div.stButton > button[kind="primary"] {
+  background:      #D4543F !important;
+  border:          none !important;
+  border-radius:   10px !important;
+  color:           #FFFFFF !important;
+  font-size:       0.82rem !important;
+  font-weight:     600 !important;
+  text-align:      center !important;
+  justify-content: center !important;
+  opacity:         1 !important;
+  box-shadow:      0 2px 8px rgba(212, 84, 63, 0.35) !important;
+  height:          auto !important;
+  line-height:     1.4 !important;
+  padding:         0.55rem 0.8rem !important;
+}
+[data-testid="stSidebar"] div.stButton > button[kind="primary"]:hover {
+  background:  #C04535 !important;
+  transform:   none !important;
+  box-shadow:  0 3px 12px rgba(212, 84, 63, 0.45) !important;
+}
+
+/* ── Brand ─────────────────────────────────────────────────────────────────── */
+.pv-wordmark {
+  display:        flex;
+  align-items:    center;
+  gap:            11px;
+  font-size:      19px;
+  font-weight:    700;
+  color:          #2C1810;
+  letter-spacing: -0.5px;
+  user-select:    none;
+  padding:        0.25rem 0;
+}
+.pv-diamond {
+  width:         8px;
+  height:        8px;
+  background:    #E88D7D;
+  transform:     rotate(45deg);
+  display:       inline-block;
+  flex-shrink:   0;
+  border-radius: 1px;
+}
+.pv-brand { font-size: 1.3rem; font-weight: 700; letter-spacing: -0.5px; color: #2C1810; display: inline-block; line-height: 1.2; }
+
+/* ── User card ─────────────────────────────────────────────────────────────── */
+.pv-user-card {
+  display:       flex;
+  align-items:   center;
+  gap:           0.6rem;
+  padding:       0.55rem 0.75rem;
+  background:    rgba(232, 141, 125, 0.08);
+  border:        1px solid rgba(232, 141, 125, 0.18);
+  border-radius: 12px;
+  margin-top:    0.5rem;
+}
+.pv-avatar-v2 {
+  width:           32px;
+  height:          32px;
+  border-radius:   50%;
+  background:      #E88D7D;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  font-size:       0.7rem;
+  font-weight:     700;
+  color:           #FFFFFF;
+  flex-shrink:     0;
+}
+.pv-avatar {
+  width:           34px;
+  height:          34px;
+  border-radius:   50%;
+  background:      #E88D7D;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  font-size:       0.75rem;
+  font-weight:     700;
+  color:           #FFFFFF;
+  flex-shrink:     0;
+}
+.pv-user-name { font-size: 0.8rem; font-weight: 600; color: #2C1810; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pv-user-role { font-size: 0.66rem; color: #A88F87; }
+
+/* ── Nav active ─────────────────────────────────────────────────────────────── */
+.pv-nav-active {
+  font-size:     0.84rem;
+  font-weight:   600;
+  color:         #2C1810;
+  padding:       0.38rem 0.8rem;
+  border-radius: 8px;
+  background:    rgba(232, 141, 125, 0.15);
+  margin:        0;
+  border-left:   2.5px solid #E07060;
+  line-height:   1.4;
+  display:       block;
+  text-align:    left;
+}
+
+/* ── Sidebar group label ──────────────────────────────────────────────────── */
+.sb-lbl {
+  font-size:      0.58rem;
+  font-weight:    700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color:          #C0ABA6;
+  padding:        0 0.8rem;
+  margin:         0.85rem 0 0.2rem;
+  display:        block;
+}
+
+/* ── Stat cards ─────────────────────────────────────────────────────────────── */
+.pv-stat-v2 {
+  background:    #FFFFFF;
+  border:        1px solid rgba(142, 94, 78, 0.18);
+  border-left:   3px solid #E88D7D;
+  border-radius: 16px;
+  padding:       1rem 1.2rem;
+  box-shadow:    0 2px 8px rgba(142, 94, 78, 0.09);
+}
+.pv-stat-num { font-size: 1.75rem; font-weight: 700; color: #2C1810; line-height: 1; margin-bottom: 0.3rem; letter-spacing: -0.5px; }
+.pv-stat-lbl { font-size: 0.63rem; color: #7A6560; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+
+/* ── Project cards ─────────────────────────────────────────────────────────── */
+.pv-proj-v2 {
+  background:      #FFFFFF;
+  border:          1px solid rgba(142, 94, 78, 0.18);
+  border-radius:   20px;
+  padding:         1.1rem 1.4rem;
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  transition:      border-color 150ms ease, box-shadow 150ms ease;
+  margin-bottom:   0.6rem;
+  box-shadow:      0 2px 8px rgba(142, 94, 78, 0.08);
+}
+.pv-proj-v2:hover {
+  border-color: rgba(232, 141, 125, 0.4);
+  box-shadow:   0 5px 18px rgba(142, 94, 78, 0.13);
+}
+.pv-proj-main  { flex: 1; min-width: 0; margin-right: 1.5rem; }
+.pv-proj-title { font-size: 0.95rem; font-weight: 600; color: #2C1810; line-height: 1.3; margin-bottom: 0.25rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.2px; }
+.pv-proj-meta  { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.35rem; }
+.pv-proj-desc  { font-size: 0.8rem; color: #6B4A3E; line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pv-proj-tags  { display: flex; gap: 0.3rem; flex-wrap: wrap; margin-top: 0.35rem; }
+
+.pv-dot { width: 5px; height: 5px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+.pv-dot-active    { background: #E88D7D; }
+.pv-dot-paused    { background: #C4A882; }
+.pv-dot-completed { background: #8E5E4E; }
+.pv-dot-archived  { background: #A88F87; }
+
+.pv-tag {
+  font-size:      0.62rem;
+  color:          #8E5E4E;
+  background:     #FFF0EB;
+  border:         1px solid rgba(142, 94, 78, 0.22);
+  padding:        2px 8px;
+  border-radius:  6px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-weight:    600;
+}
+.pv-proj-score { text-align: center; flex-shrink: 0; margin-right: 1rem; }
+.pv-score-num  { font-size: 1.8rem; font-weight: 700; line-height: 1; margin-bottom: 0.15rem; letter-spacing: -1px; }
+.pv-score-lbl  { font-size: 0.58rem; color: #7A6560; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; }
+
+/* ── Page title ─────────────────────────────────────────────────────────────── */
+.pv-page-title { font-size: 1.65rem; font-weight: 700; color: #2C1810; margin: 0; line-height: 1.2; letter-spacing: -0.5px; }
+
+/* ── Primary button ─────────────────────────────────────────────────────────── */
+div.stButton > button[kind="primary"] {
+  background:     #D4543F !important;
+  border:         none !important;
+  color:          #FFFFFF !important;
+  font-weight:    600 !important;
+  border-radius:  10px !important;
+  font-size:      0.82rem !important;
+  letter-spacing: 0.01em !important;
+  opacity:        1 !important;
+  box-shadow:     0 2px 10px rgba(212, 84, 63, 0.38) !important;
+  transition:     background 150ms ease, box-shadow 150ms ease, transform 100ms ease !important;
+}
+div.stButton > button[kind="primary"]:hover {
+  background:  #C04535 !important;
+  box-shadow:  0 4px 18px rgba(212, 84, 63, 0.45) !important;
+  transform:   translateY(-1px) !important;
+}
+div.stButton > button[kind="primary"]:active,
+div.stButton > button[kind="primary"]:focus-visible {
+  background:  #B03D2E !important;
+  box-shadow:  0 0 0 3px rgba(212, 84, 63, 0.35), 0 6px 22px rgba(212, 84, 63, 0.5) !important;
+  transform:   translateY(0) !important;
+  outline:     none !important;
+}
+
+/* ── Ghost button ───────────────────────────────────────────────────────────── */
+div.stButton > button[kind="secondary"] {
+  background:     transparent !important;
+  border:         1px solid rgba(142, 94, 78, 0.25) !important;
+  color:          #8E5E4E !important;
+  border-radius:  10px !important;
+  font-size:      0.82rem !important;
+  font-weight:    500 !important;
+  box-shadow:     none !important;
+  transition:     background 150ms ease, color 150ms ease, border-color 150ms ease !important;
+}
+div.stButton > button[kind="secondary"]:hover {
+  background:   #FFF0EB !important;
+  color:        #2C1810 !important;
+  border-color: rgba(232, 141, 125, 0.35) !important;
+  transform:    none !important;
+  box-shadow:   none !important;
+}
+
+/* ── Download button ────────────────────────────────────────────────────────── */
+div.stDownloadButton > button {
+  background:    #FFF0EB !important;
+  border:        1px solid rgba(142, 94, 78, 0.22) !important;
+  color:         #8E5E4E !important;
+  border-radius: 10px !important;
+  font-size:     0.82rem !important;
+  box-shadow:    none !important;
+  transition:    background 150ms ease, color 150ms ease !important;
+}
+div.stDownloadButton > button:hover {
+  background:   #E88D7D !important;
+  color:        #FFFFFF !important;
+  border-color: #E88D7D !important;
+  transform:    none !important;
+}
+
+/* ── Inputs ─────────────────────────────────────────────────────────────────── */
+div[data-baseweb="input"] > div {
+  background:    #FFFFFF !important;
+  border:        1px solid rgba(142, 94, 78, 0.22) !important;
+  border-radius: 10px !important;
+  box-shadow:    none !important;
+  transition:    border-color 150ms ease !important;
+}
+div[data-baseweb="input"] > div:focus-within {
+  border-color: #E88D7D !important;
+  box-shadow:   0 0 0 3px rgba(232, 141, 125, 0.12) !important;
+}
+div[data-baseweb="input"] input { color: #2C1810 !important; font-size: 0.875rem !important; }
+div[data-baseweb="input"] input::placeholder { color: #A88F87 !important; }
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow:      0 0 0 30px #FFFFFF inset !important;
+  -webkit-text-fill-color: #2C1810 !important;
+  caret-color:             #2C1810 !important;
+  border:                  1px solid rgba(142, 94, 78, 0.22) !important;
+  transition:              background-color 5000s ease-in-out 0s;
+}
+
+div[data-baseweb="textarea"] > div {
+  background:    #FFFFFF !important;
+  border:        1px solid rgba(142, 94, 78, 0.22) !important;
+  border-radius: 10px !important;
+  box-shadow:    none !important;
+}
+div[data-baseweb="textarea"] > div:focus-within {
+  border-color: #E88D7D !important;
+  box-shadow:   0 0 0 3px rgba(232, 141, 125, 0.1) !important;
+}
+
+div[data-baseweb="select"] > div {
+  background:    #FFFFFF !important;
+  border:        1px solid rgba(142, 94, 78, 0.22) !important;
+  border-radius: 10px !important;
+  box-shadow:    none !important;
+}
+div[data-baseweb="select"] > div:focus-within { border-color: #E88D7D !important; }
+
+/* ── Expander ───────────────────────────────────────────────────────────────── */
+details[data-testid="stExpander"] {
+  background:    #FFFFFF !important;
+  border:        1px solid rgba(142, 94, 78, 0.18) !important;
+  border-radius: 16px !important;
+  box-shadow:    0 2px 8px rgba(142, 94, 78, 0.07) !important;
+  transition:    border-color 150ms ease !important;
+}
+details[data-testid="stExpander"]:hover { border-color: rgba(232, 141, 125, 0.3) !important; }
+details[data-testid="stExpander"] summary { font-weight: 500 !important; color: #6B4A3E !important; padding: 0.7rem 1rem !important; }
+details[data-testid="stExpander"][open] summary { color: #2C1810 !important; }
+
+/* ── Tabs ───────────────────────────────────────────────────────────────────── */
+.stTabs [data-baseweb="tab-list"] {
+  gap:           3px;
+  background:    #FFF0EB;
+  border-radius: 12px;
+  padding:       4px;
+  border:        1px solid rgba(142, 94, 78, 0.15);
+}
+.stTabs [data-baseweb="tab"] {
+  border-radius: 9px !important;
+  padding:       0.38rem 0.95rem !important;
+  font-weight:   500 !important;
+  font-size:     0.82rem !important;
+  color:         #A88F87 !important;
+  background:    transparent !important;
+  border:        none !important;
+  box-shadow:    none !important;
+  transition:    background 150ms ease, color 150ms ease !important;
+}
+.stTabs [data-baseweb="tab"]:hover { color: #2C1810 !important; background: rgba(232, 141, 125, 0.1) !important; }
+.stTabs [aria-selected="true"] { background: #FFFFFF !important; color: #2C1810 !important; box-shadow: 0 1px 4px rgba(142, 94, 78, 0.12) !important; }
+
+/* ── Form ───────────────────────────────────────────────────────────────────── */
+div[data-testid="stForm"] {
+  background:    #FFFFFF !important;
+  border:        1px solid rgba(142, 94, 78, 0.15) !important;
+  border-radius: 16px !important;
+  padding:       1.2rem !important;
+  box-shadow:    0 2px 8px rgba(142, 94, 78, 0.07) !important;
+}
+
+/* ── Alerts ─────────────────────────────────────────────────────────────────── */
+div[data-testid="stAlert"]   { border-radius: 10px !important; font-size: 0.82rem !important; padding: 0.6rem 1rem !important; }
+div[data-testid="stInfo"]    { background: #FFF8F5 !important; border-color: rgba(142, 94, 78, 0.2) !important; color: #6B4A3E !important; }
+div[data-testid="stWarning"] { background: rgba(196, 168, 130, 0.1) !important; border-color: rgba(196, 168, 130, 0.3) !important; }
+div[data-testid="stSuccess"] { background: rgba(142, 94, 78, 0.07) !important; border-color: rgba(142, 94, 78, 0.22) !important; }
+div[data-testid="stError"]   { background: rgba(207, 111, 97, 0.08) !important; border-color: rgba(207, 111, 97, 0.25) !important; }
+
+/* ── Metrics ─────────────────────────────────────────────────────────────────── */
+div[data-testid="stMetricValue"] { font-size: 1.75rem !important; font-weight: 700 !important; color: #2C1810 !important; letter-spacing: -0.5px !important; }
+div[data-testid="stMetricLabel"] { color: #7A6560 !important; font-size: 0.68rem !important; text-transform: uppercase !important; letter-spacing: 0.08em !important; font-weight: 600 !important; }
+
+/* ── Chat ───────────────────────────────────────────────────────────────────── */
+div[data-testid="stChatMessage"] {
+  background:    #FFFFFF !important;
+  border:        1px solid rgba(142, 94, 78, 0.15) !important;
+  border-radius: 16px !important;
+  margin-bottom: 0.5rem !important;
+  box-shadow:    0 2px 6px rgba(142, 94, 78, 0.07) !important;
+}
+div[data-testid="stChatInput"] > div {
+  background:    #FFFFFF !important;
+  border:        1px solid rgba(142, 94, 78, 0.22) !important;
+  border-radius: 12px !important;
+  box-shadow:    none !important;
+}
+div[data-testid="stChatInput"] > div:focus-within {
+  border-color: #E88D7D !important;
+  box-shadow:   0 0 0 3px rgba(232, 141, 125, 0.1) !important;
+}
+
+/* ── Progress ───────────────────────────────────────────────────────────────── */
+.stProgress > div > div > div { background: #E88D7D !important; border-radius: 999px !important; }
+
+/* ── Spinner ─────────────────────────────────────────────────────────────────── */
+.stSpinner > div > div { border-color: #E88D7D transparent transparent transparent !important; }
+
+/* ── Multiselect tags ───────────────────────────────────────────────────────── */
+div[data-baseweb="tag"] { background: #FFF0EB !important; border: 1px solid rgba(232, 141, 125, 0.3) !important; border-radius: 6px !important; color: #8E5E4E !important; }
+
+/* ── Divider ─────────────────────────────────────────────────────────────────── */
+.stDivider hr { border: none !important; height: 1px !important; background: rgba(142, 94, 78, 0.13) !important; margin: 0.75rem 0 !important; }
+
+/* ── Checkbox ────────────────────────────────────────────────────────────────── */
+input[type="checkbox"] { accent-color: #E88D7D !important; }
+
+/* ── Toggle ──────────────────────────────────────────────────────────────────── */
+div[data-testid="stToggle"] label div { background: #E88D7D !important; }
+
+/* ── Generic card ────────────────────────────────────────────────────────────── */
+.pv-card {
+  background:    #FFFFFF;
+  border:        1px solid rgba(142, 94, 78, 0.18);
+  border-radius: 20px;
+  padding:       1rem 1.25rem;
+  margin-bottom: 0.6rem;
+  box-shadow:    0 2px 8px rgba(142, 94, 78, 0.08);
+  transition:    border-color 150ms ease, box-shadow 150ms ease;
+}
+.pv-card:hover { border-color: rgba(232, 141, 125, 0.35); box-shadow: 0 4px 14px rgba(142, 94, 78, 0.12); }
+
+/* ── Update type tags ────────────────────────────────────────────────────────── */
+.tag {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 8px; border-radius: 6px;
+  font-size: 0.62rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.07em;
+  margin-right: 3px; margin-bottom: 2px;
+}
+.tag-note      { background: #FFF8F5;  color: #8E5E4E; border: 1px solid rgba(142, 94, 78, 0.2); }
+.tag-decision  { background: #FFF0EB;  color: #8E5E4E; border: 1px solid rgba(232, 141, 125, 0.25); }
+.tag-milestone { background: rgba(196, 168, 130, 0.15); color: #7A5C30; border: 1px solid rgba(196, 168, 130, 0.3); }
+.tag-blocker   { background: rgba(207, 111, 97, 0.1);  color: #8B3A2A; border: 1px solid rgba(207, 111, 97, 0.22); }
+.tag-pivot     { background: rgba(232, 141, 125, 0.12);  color: #8E5E4E; border: 1px solid rgba(232, 141, 125, 0.25); }
+.tag-generic   { background: #FFF8F5;  color: #A88F87; border: 1px solid rgba(142, 94, 78, 0.15); }
+
+/* ── Health classes ──────────────────────────────────────────────────────────── */
+.health-green  { color: #8E5E4E; font-weight: 700; }
+.health-yellow { color: #C4A882; font-weight: 700; }
+.health-red    { color: #CF6F61; font-weight: 700; }
+
+/* ── Status classes ──────────────────────────────────────────────────────────── */
+.status-active    { color: #E88D7D; }
+.status-paused    { color: #C4A882; }
+.status-completed { color: #8E5E4E; }
+.status-archived  { color: #A88F87; }
+
+/* ── Empty state ─────────────────────────────────────────────────────────────── */
+.empty-state { text-align: center; padding: 3.5rem 2rem; }
+.empty-state h3 { font-size: 1rem; font-weight: 600; color: #6B4A3E; margin: 0.75rem 0 0.4rem; }
+.empty-state p  { font-size: 0.82rem; color: #7A6560; max-width: 340px; margin: 0 auto; line-height: 1.65; }
+
+/* ── Login feature pills ─────────────────────────────────────────────────────── */
+.feature-pill {
+  display: inline-flex; align-items: center;
+  background: #FFFFFF; border: 1px solid rgba(142, 94, 78, 0.2); border-radius: 8px;
+  padding: 4px 12px; font-size: 0.73rem; color: #6B4A3E; font-weight: 500; margin: 3px;
+}
+
+/* ── Update cards ────────────────────────────────────────────────────────────── */
+.update-card {
+  background: #FFFFFF; border: 1px solid rgba(142, 94, 78, 0.15); border-radius: 16px;
+  padding: 0.9rem 1.1rem; margin-bottom: 0.5rem;
+  border-left: 3px solid transparent; transition: border-color 150ms ease;
+  box-shadow: 0 2px 6px rgba(142, 94, 78, 0.07);
+}
+.update-card.type-note        { border-left-color: #E88D7D; }
+.update-card.type-decision    { border-left-color: #8E5E4E; }
+.update-card.type-milestone   { border-left-color: #C4A882; }
+.update-card.type-blocker     { border-left-color: #CF6F61; }
+.update-card.type-pivot       { border-left-color: #F5C4B4; }
+
+/* ── Sidebar link ────────────────────────────────────────────────────────────── */
+.sidebar-link {
+  display: block; padding: .45rem .8rem; border-radius: 10px;
+  color: #7A6560; text-decoration: none; margin-bottom: 2px;
+  font-size: .85rem; font-weight: 500; transition: color 150ms ease, background 150ms ease;
+}
+.sidebar-link:hover  { color: #2C1810; background: rgba(232, 141, 125, 0.1); }
+.sidebar-link.active { color: #2C1810; background: rgba(232, 141, 125, 0.15); border-left: 2.5px solid #E88D7D; }
+
+/* ── Section header ──────────────────────────────────────────────────────────── */
+.pv-section-hdr {
+  font-size: 0.63rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.09em; color: #A88F87;
+  padding-bottom: 8px; border-bottom: 1px solid rgba(142, 94, 78, 0.13);
+  margin-bottom: 0.9rem; margin-top: 0.25rem;
+}
+
+/* ── Separator ───────────────────────────────────────────────────────────────── */
+.pv-sep { height: 1px; background: rgba(142, 94, 78, 0.1); margin: 1.25rem 0 1.5rem; }
+
+/* ── Sidebar share box ───────────────────────────────────────────────────────── */
+.sb-share-box {
+  background:    rgba(232, 141, 125, 0.06);
+  border:        1px solid rgba(232, 141, 125, 0.18);
+  border-radius: 10px;
+  padding:       0.7rem 0.85rem;
+  margin-bottom: 0.4rem;
+}
+.sb-share-proj  { font-size: 0.75rem; font-weight: 600; color: #2C1810; margin-bottom: 0.25rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sb-share-link  { font-size: 0.65rem; color: #7A6560; word-break: break-all; line-height: 1.4; font-family: monospace !important; }
+
+/* ── Global polish ───────────────────────────────────────────────────────────── */
+[data-testid="stSidebar"] > div:first-child { min-width: 248px !important; max-width: 248px !important; }
+div.stButton > button, div.stDownloadButton > button, [data-testid="stSidebar"] a,
+details summary, .stTabs [data-baseweb="tab"], div[data-baseweb="select"] { cursor: pointer !important; }
+.stMarkdown p { line-height: 1.65 !important; color: #6B4A3E; }
+.stCaption    { font-size: 0.78rem !important; color: #7A6560 !important; }
+input:focus, textarea:focus, select:focus { outline: none !important; }
+
+div[data-testid="stToast"] {
+  background: #FFFFFF !important; border: 1px solid rgba(142, 94, 78, 0.15) !important;
+  border-radius: 12px !important; color: #2C1810 !important;
+  font-size: 0.82rem !important; box-shadow: 0 4px 16px rgba(142, 94, 78, 0.14) !important;
+}
+
+*, *::before, *::after { animation: none !important; animation-delay: 0s !important; }
