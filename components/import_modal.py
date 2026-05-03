@@ -514,6 +514,118 @@ def _render_paste_tab() -> None:
         st.rerun()
 
 
+# ── Tab 4: GitHub Repo ────────────────────────────────────────────────────────
+
+def _render_github_tab() -> None:
+    st.markdown(
+        '<p style="color:#6B4A3E;font-size:0.85rem;margin-bottom:0.75rem;">'
+        'Paste a public GitHub repo URL — ProjectVault will download it, extract README + code files, '
+        'and auto-detect tags, milestones, and a description.'
+        '</p>',
+        unsafe_allow_html=True,
+    )
+    st.caption("Private repos need a GitHub token — add one in Settings.")
+
+    repo_url = st.text_input(
+        "GitHub repo URL",
+        placeholder="https://github.com/owner/repo  (or just owner/repo)",
+        key="imp_github_url",
+    )
+    branch = st.text_input(
+        "Branch (optional)",
+        placeholder="leave empty for default branch",
+        key="imp_github_branch",
+    )
+
+    if not st.button("Import Repo", type="primary", key="imp_github_btn"):
+        return
+
+    if not repo_url.strip():
+        st.error("Enter a GitHub repo URL.")
+        return
+
+    from services import github_service
+
+    with st.status("Connecting to GitHub...", expanded=True) as status:
+        st.write(f"Fetching `{repo_url.strip()}` …")
+        result = github_service.fetch_repo_zip(repo_url.strip(), branch.strip())
+
+        if result.get("error"):
+            status.update(label="Import failed", state="error")
+            st.error(result["error"])
+            return
+
+        st.write(f"Downloaded `{result['repo_path']}` (branch: `{result['branch']}`)")
+        st.write("Extracting files from archive…")
+        zip_result = import_service.extract_text_from_zip(result["bytes"])
+
+        if zip_result.get("error"):
+            status.update(label="Extract failed", state="error")
+            st.error(f"Could not read repo: {zip_result['error']}")
+            return
+
+        st.write(zip_result["summary"])
+
+        # Show file tree preview
+        tree_lines = []
+        for fname, size_kb, s in zip_result["file_tree"][:25]:
+            if s == "ok":
+                tree_lines.append(f"{fname} ({size_kb:.0f} KB)")
+            elif s == "skipped":
+                tree_lines.append(f"{fname} (skipped)")
+        if tree_lines:
+            st.markdown(
+                "<div style='font-size:0.78rem;color:#6B4A3E;background:#FFF5F0;border:1px solid rgba(142,94,78,0.15);"
+                "border-radius:8px;padding:10px 14px;margin:6px 0;line-height:1.7;'>"
+                + "<br>".join(tree_lines)
+                + ("..." if len(zip_result["file_tree"]) > 25 else "")
+                + "</div>",
+                unsafe_allow_html=True,
+            )
+
+        all_text = zip_result["combined_text"]
+        if not all_text.strip():
+            status.update(label="No readable content", state="error")
+            st.error("This repo had no readable text files (might be all binaries).")
+            return
+
+        # Truncate large repos
+        MAX_CHARS = 100_000
+        if len(all_text) > MAX_CHARS:
+            all_text = all_text[:MAX_CHARS]
+            st.warning("Large repo — analyzing first 100 KB.")
+
+        if zip_result["is_code_project"]:
+            all_text += "\n\n[NOTE: This is a code/engineering project (GitHub repository).]"
+
+        st.write("Running AI analysis…")
+        analysis = import_service.analyze_content(all_text)
+
+        # Always tag as engineering + add github linked URL
+        if "engineering" not in [t.lower() for t in analysis.get("tags", [])]:
+            analysis["tags"] = analysis.get("tags", []) + ["engineering"]
+
+        # Use repo name as project name if AI didn't extract one
+        if not analysis.get("project_name"):
+            analysis["project_name"] = result["repo_path"].split("/")[-1]
+
+        project_name = analysis.get("project_name", "Unknown")
+        status.update(label=f"Imported: \"{project_name}\"", state="complete")
+
+    # Auto-link the GitHub repo
+    repo_link = {
+        "platform": "github",
+        "label":    result["repo_path"],
+        "url":      f"https://github.com/{result['repo_path']}",
+        "icon":     "",
+    }
+
+    st.session_state["import_analysis"]    = analysis
+    st.session_state["import_raw_text"]    = all_text
+    st.session_state["import_linked_urls"] = [repo_link]
+    st.rerun()
+
+
 # ── Main entry point ──────────────────────────────────────────────────────────
 
 def render_import_modal(user: dict) -> None:
@@ -525,12 +637,17 @@ def render_import_modal(user: dict) -> None:
         st.query_params.clear()
         st.info("Clipboard text captured — switch to the **Paste Text / URL** tab to use it.")
 
-    st.caption("Upload files, connect Google Drive, or paste your project brief — AI will auto-analyze and set everything up.")
+    st.caption("Upload files, paste a GitHub repo, connect Google Drive, or paste your brief — AI auto-analyzes everything.")
 
-    tab_files, tab_drive, tab_paste = st.tabs(["Upload Files", "Google Drive", "Paste Text / URL"])
+    tab_files, tab_github, tab_drive, tab_paste = st.tabs(
+        ["Upload Files", "GitHub Repo", "Google Drive", "Paste Text / URL"]
+    )
 
     with tab_files:
         _render_file_tab()
+
+    with tab_github:
+        _render_github_tab()
 
     with tab_drive:
         _render_gdrive_tab()

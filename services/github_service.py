@@ -148,3 +148,76 @@ def _update_integration_sync(project_id: str):
         "last_synced_at": datetime.now(timezone.utc).isoformat(),
         "status": "active",
     }).eq("project_id", project_id).eq("integration_type", "github").execute()
+
+
+# ── GitHub repo file import ───────────────────────────────────────────────────
+def fetch_repo_zip(repo_url: str, branch: str = "") -> dict:
+    """Download a GitHub repo as ZIP and return its bytes + metadata.
+
+    Returns: {"bytes": <zip>, "repo_path": "owner/repo", "branch": "main", "error": None}
+             or {"error": "...", "bytes": None}
+    """
+    import requests
+    repo_path = _parse_repo_path(repo_url)
+    if "/" not in repo_path:
+        return {"error": "URL must be in form github.com/owner/repo", "bytes": None}
+
+    token = _get_token()
+    headers = {"Accept": "application/vnd.github+json"}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+
+    # Get default branch if none specified
+    if not branch:
+        try:
+            r = requests.get(
+                f"https://api.github.com/repos/{repo_path}",
+                headers=headers, timeout=15,
+            )
+            if r.status_code == 404:
+                return {"error": "Repository not found (or private without a token).", "bytes": None}
+            if r.status_code == 401:
+                return {"error": "Invalid GitHub token. Update it in Settings.", "bytes": None}
+            if r.status_code != 200:
+                return {"error": f"GitHub API error: {r.status_code}", "bytes": None}
+            branch = r.json().get("default_branch", "main")
+        except Exception as e:
+            return {"error": f"Network error: {e}", "bytes": None}
+
+    # Download zipball
+    try:
+        zip_url = f"https://api.github.com/repos/{repo_path}/zipball/{branch}"
+        zr = requests.get(zip_url, headers=headers, timeout=60, stream=True)
+        if zr.status_code != 200:
+            return {"error": f"Could not download repo ({zr.status_code})", "bytes": None}
+        # Stream-collect; cap at 50 MB so we don't OOM the free tier
+        max_bytes = 50 * 1024 * 1024
+        chunks, total = [], 0
+        for chunk in zr.iter_content(chunk_size=64 * 1024):
+            chunks.append(chunk)
+            total += len(chunk)
+            if total > max_bytes:
+                return {"error": "Repository is larger than 50 MB — too big for free tier.", "bytes": None}
+        return {
+            "bytes": b"".join(chunks),
+            "repo_path": repo_path,
+            "branch": branch,
+            "error": None,
+        }
+    except Exception as e:
+        return {"error": f"Download failed: {e}", "bytes": None}
+
+
+def get_recent_commits(repo_url: str, limit: int = 10) -> list:
+    """Fetch recent commits — used by project page sync."""
+    from github import Github, GithubException
+    token = _get_token()
+    if not token:
+        return []
+    try:
+        g = Github(token)
+        repo = g.get_repo(_parse_repo_path(repo_url))
+        return [{"sha": c.sha[:8], "message": c.commit.message[:120], "url": c.html_url}
+                for c in repo.get_commits()[:limit]]
+    except GithubException:
+        return []
