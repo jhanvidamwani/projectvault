@@ -225,13 +225,27 @@ total_updates   = len(get_recent_updates_for_user(project_ids, limit=200)) if pr
 render_sidebar(user, active="dashboard", projects=projects)
 
 # ── Hero ───────────────────────────────────────────────────────────────────────
+# Get user's local browser hour via JS (works for any timezone — EST, IST, anywhere)
+_hour = None
 try:
-    from zoneinfo import ZoneInfo
-    _user_tz = ZoneInfo(os.getenv("USER_TZ", "Asia/Kolkata"))
-    _hour    = datetime.now(_user_tz).hour
+    from streamlit_js_eval import streamlit_js_eval
+    _local_hour = streamlit_js_eval(
+        js_expressions="new Date().getHours()",
+        key="user_local_hour",
+        want_output=True,
+    )
+    if _local_hour is not None:
+        _hour = int(_local_hour)
 except Exception:
-    # Fallback: UTC + 5:30 for IST
-    _hour = (datetime.now(timezone.utc) + timedelta(hours=5, minutes=30)).hour
+    pass
+
+# Fallback: try server timezone, then UTC
+if _hour is None:
+    try:
+        from zoneinfo import ZoneInfo
+        _hour = datetime.now(ZoneInfo("UTC")).hour
+    except Exception:
+        _hour = datetime.utcnow().hour
 _name_safe = _html.escape(user.get("name") or "")
 _first     = _html.escape((_name_safe or "there").split()[0])
 
