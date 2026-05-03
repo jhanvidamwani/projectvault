@@ -9,6 +9,7 @@ from typing import Optional
 # ============================================================
 
 def create_project(owner_id: str, title: str, description: str = "", tags: list[str] = None) -> dict:
+    """Note: invalidates cache on success."""
     admin = get_supabase_admin()
     data = {
         "owner_id": owner_id,
@@ -27,9 +28,11 @@ def create_project(owner_id: str, title: str, description: str = "", tags: list[
         "role": "owner",
         "invited_by": owner_id,
     }).execute()
+    _invalidate_project_caches()
     return project
 
 
+@st.cache_data(ttl=30, show_spinner=False)
 def get_projects_for_user(user_id: str) -> list[dict]:
     admin = get_supabase_admin()
     owned = admin.table("projects").select("*").eq("owner_id", user_id).execute().data
@@ -46,6 +49,7 @@ def get_projects_for_user(user_id: str) -> list[dict]:
     return all_projects
 
 
+@st.cache_data(ttl=30, show_spinner=False)
 def get_project(project_id: str) -> Optional[dict]:
     admin = get_supabase_admin()
     response = admin.table("projects").select("*").eq("id", project_id).limit(1).execute()
@@ -57,12 +61,25 @@ def update_project(project_id: str, updates: dict) -> dict:
     from datetime import datetime, timezone
     updates["updated_at"] = datetime.now(timezone.utc).isoformat()
     response = admin.table("projects").update(updates).eq("id", project_id).execute()
+    _invalidate_project_caches()
     return response.data[0]
 
 
 def delete_project(project_id: str) -> None:
     admin = get_supabase_admin()
     admin.table("projects").delete().eq("id", project_id).execute()
+    _invalidate_project_caches()
+
+
+def _invalidate_project_caches() -> None:
+    """Clear cached project/update queries so fresh data is fetched on next read."""
+    try:
+        get_projects_for_user.clear()
+        get_project.clear()
+        get_recent_updates_for_user.clear()
+        get_milestones_for_user.clear()
+    except Exception:
+        pass
 
 
 def get_project_by_share_token(share_token: str) -> Optional[dict]:
@@ -104,6 +121,7 @@ def get_updates(project_id: str, limit: int = 50) -> list[dict]:
     return response.data
 
 
+@st.cache_data(ttl=30, show_spinner=False)
 def get_recent_updates_for_user(project_ids: list[str], limit: int = 10) -> list[dict]:
     if not project_ids:
         return []
@@ -119,6 +137,7 @@ def get_recent_updates_for_user(project_ids: list[str], limit: int = 10) -> list
     return response.data
 
 
+@st.cache_data(ttl=30, show_spinner=False)
 def get_milestones_for_user(project_ids: list[str], limit: int = 8) -> list[dict]:
     if not project_ids:
         return []

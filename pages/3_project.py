@@ -345,8 +345,8 @@ with col_health_area:
 st.markdown('<div style="height:1px;background:rgba(142,94,78,0.12);margin:1.5rem 0 0;"></div>', unsafe_allow_html=True)
 
 # ── Tabs ──────────────────────────────────────────────────────────────────────
-tab_overview, tab_updates, tab_timeline, tab_integrations, tab_retro, tab_report, tab_settings = st.tabs([
-    "Overview", "Updates", "Timeline", "Integrations", "Retrospective", "Report", "Settings",
+tab_overview, tab_updates, tab_timeline, tab_files, tab_integrations, tab_retro, tab_report, tab_settings = st.tabs([
+    "Overview", "Updates", "Timeline", "Files", "Integrations", "Retrospective", "Report", "Settings",
 ])
 
 # ── Type chip helper ──────────────────────────────────────────────────────────
@@ -638,6 +638,117 @@ with tab_timeline:
                 unsafe_allow_html=True,
             )
             render_snapshot_compare(snapshots, project_id, user["id"])
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# FILES — live GitHub repo browser
+# ═══════════════════════════════════════════════════════════════════════════════
+with tab_files:
+    _repo_url = project.get("github_repo_url", "")
+    if not _repo_url:
+        st.markdown(
+            '<div style="padding:2.5rem 1rem;text-align:center;color:#7A6560;">'
+            '<div style="font-size:2rem;margin-bottom:0.5rem;color:#A88F87;">⌘</div>'
+            '<p style="font-size:0.9rem;font-weight:600;color:#2C1810;margin:0 0 0.4rem;">No GitHub repo linked</p>'
+            '<p style="font-size:0.8rem;margin:0;">Link a GitHub repo in the <b>Integrations</b> tab to browse its files here.</p>'
+            '</div>',
+            unsafe_allow_html=True,
+        )
+    else:
+        from services import github_service
+
+        # Lazy-load tree only when this tab is opened
+        with st.spinner("Loading file tree..."):
+            tree_result = github_service.get_file_tree(_repo_url)
+
+        if tree_result.get("error"):
+            st.error(f"Could not load repo files: {tree_result['error']}")
+        else:
+            tree    = tree_result["tree"]
+            _branch = tree_result.get("branch", "main")
+            files   = [e for e in tree if e["type"] == "blob"]
+            _repo_path = github_service._parse_repo_path(_repo_url)
+
+            st.markdown(
+                f'<div style="font-size:0.78rem;color:#7A6560;margin-bottom:0.6rem;">'
+                f'<b style="color:#2C1810;">{_html.escape(_repo_path)}</b> · '
+                f'branch <code style="background:rgba(142,94,78,0.08);padding:1px 6px;border-radius:4px;">{_html.escape(_branch)}</code> · '
+                f'{len(files)} files</div>',
+                unsafe_allow_html=True,
+            )
+
+            if tree_result.get("truncated"):
+                st.warning("Repo has too many files — showing first batch only.")
+
+            col_tree, col_view = st.columns([2, 5], gap="medium")
+
+            with col_tree:
+                st.markdown('<div class="pv-section-hdr">Files</div>', unsafe_allow_html=True)
+                # Filter out very large files & build a sorted display list
+                display_files = sorted(
+                    [f for f in files if f.get("size", 0) < 5_000_000],
+                    key=lambda f: f["path"],
+                )
+                # Search filter
+                _q = st.text_input(
+                    "Filter", placeholder="search filename…",
+                    label_visibility="collapsed", key="file_filter",
+                )
+                if _q:
+                    display_files = [f for f in display_files if _q.lower() in f["path"].lower()]
+
+                # Selectbox for fast picking (works better than 200+ buttons)
+                _selected = st.radio(
+                    "Pick a file",
+                    options=[f["path"] for f in display_files[:200]],
+                    label_visibility="collapsed",
+                    key=f"file_pick_{project_id}",
+                )
+
+            with col_view:
+                if _selected:
+                    st.markdown('<div class="pv-section-hdr">Preview</div>', unsafe_allow_html=True)
+                    with st.spinner("Fetching file..."):
+                        fc = github_service.get_file_content(_repo_url, _selected, _branch)
+
+                    _ext = _selected.rsplit(".", 1)[-1].lower() if "." in _selected else ""
+                    _LANG_MAP = {
+                        "py": "python", "js": "javascript", "ts": "typescript", "tsx": "tsx",
+                        "jsx": "jsx", "json": "json", "yaml": "yaml", "yml": "yaml",
+                        "html": "html", "css": "css", "md": "markdown", "sh": "bash",
+                        "sql": "sql", "go": "go", "rs": "rust", "java": "java",
+                        "c": "c", "cpp": "cpp", "rb": "ruby", "toml": "toml",
+                    }
+                    _lang = _LANG_MAP.get(_ext, None)
+
+                    _gh_link = f"https://github.com/{_repo_path}/blob/{_branch}/{_selected}"
+                    st.markdown(
+                        f'<div style="display:flex;justify-content:space-between;align-items:center;'
+                        f'background:#FFF5F0;border:1px solid rgba(142,94,78,0.18);border-radius:8px;'
+                        f'padding:0.5rem 0.85rem;margin-bottom:0.5rem;font-size:0.78rem;">'
+                        f'<code style="color:#2C1810;background:transparent;">{_html.escape(_selected)}</code>'
+                        f'<a href="{_gh_link}" target="_blank" rel="noopener" '
+                        f'style="color:#E07060;text-decoration:none;font-weight:600;">Open in GitHub →</a>'
+                        f'</div>',
+                        unsafe_allow_html=True,
+                    )
+
+                    if fc.get("error"):
+                        st.error(fc["error"])
+                    elif fc.get("binary"):
+                        _kb = fc.get("size", 0) / 1024
+                        st.info(f"Binary file ({_kb:.0f} KB) — open on GitHub to view.")
+                    else:
+                        if _lang == "markdown":
+                            st.markdown(fc["content"])
+                        else:
+                            st.code(fc["content"], language=_lang)
+                else:
+                    st.markdown(
+                        '<div style="padding:2rem 1rem;text-align:center;color:#A88F87;font-size:0.85rem;">'
+                        'Select a file from the left to preview.'
+                        '</div>',
+                        unsafe_allow_html=True,
+                    )
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # INTEGRATIONS

@@ -221,3 +221,82 @@ def get_recent_commits(repo_url: str, limit: int = 10) -> list:
                 for c in repo.get_commits()[:limit]]
     except GithubException:
         return []
+
+
+# ── GitHub live file browser (Option B: fetch on-demand) ──────────────────────
+@st.cache_data(ttl=300, show_spinner=False)
+def get_file_tree(repo_url: str, branch: str = "") -> dict:
+    """Return full file tree for a repo. Cached 5 min.
+
+    Returns: {"tree": [{"path","type","size","sha"}], "branch": "main", "error": None}
+    """
+    import requests
+    repo_path = _parse_repo_path(repo_url)
+    if "/" not in repo_path:
+        return {"error": "Invalid repo URL", "tree": []}
+
+    token = _get_token()
+    headers = {"Accept": "application/vnd.github+json"}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+
+    try:
+        if not branch:
+            r = requests.get(f"https://api.github.com/repos/{repo_path}", headers=headers, timeout=10)
+            if r.status_code != 200:
+                return {"error": f"Repo not found ({r.status_code})", "tree": []}
+            branch = r.json().get("default_branch", "main")
+
+        r = requests.get(
+            f"https://api.github.com/repos/{repo_path}/git/trees/{branch}?recursive=1",
+            headers=headers, timeout=15,
+        )
+        if r.status_code != 200:
+            return {"error": f"Could not fetch tree ({r.status_code})", "tree": []}
+
+        data = r.json()
+        tree = [
+            {"path": e["path"], "type": e["type"], "size": e.get("size", 0), "sha": e["sha"]}
+            for e in data.get("tree", [])
+        ]
+        return {"tree": tree, "branch": branch, "truncated": data.get("truncated", False), "error": None}
+    except Exception as e:
+        return {"error": str(e), "tree": []}
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_file_content(repo_url: str, path: str, branch: str = "main") -> dict:
+    """Fetch single file content. Cached 5 min per (repo, path, branch).
+
+    Returns: {"content": "...", "size": 1234, "encoding": "utf-8", "error": None, "binary": False}
+    """
+    import requests, base64
+    repo_path = _parse_repo_path(repo_url)
+    token = _get_token()
+    headers = {"Accept": "application/vnd.github+json"}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+
+    try:
+        r = requests.get(
+            f"https://api.github.com/repos/{repo_path}/contents/{path}",
+            params={"ref": branch}, headers=headers, timeout=15,
+        )
+        if r.status_code != 200:
+            return {"content": "", "error": f"Could not fetch ({r.status_code})", "size": 0, "binary": False}
+        data = r.json()
+        size = data.get("size", 0)
+
+        # Skip very large files
+        if size > 1_000_000:
+            return {"content": "", "error": "File too large to preview (>1 MB)", "size": size, "binary": False}
+
+        raw = base64.b64decode(data.get("content", ""))
+        # Detect binary
+        try:
+            content = raw.decode("utf-8")
+            return {"content": content, "size": size, "encoding": "utf-8", "binary": False, "error": None}
+        except UnicodeDecodeError:
+            return {"content": "", "size": size, "binary": True, "error": None}
+    except Exception as e:
+        return {"content": "", "error": str(e), "size": 0, "binary": False}
