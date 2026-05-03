@@ -225,27 +225,8 @@ total_updates   = len(get_recent_updates_for_user(project_ids, limit=200)) if pr
 render_sidebar(user, active="dashboard", projects=projects)
 
 # ── Hero ───────────────────────────────────────────────────────────────────────
-# Get user's local browser hour via JS (works for any timezone — EST, IST, anywhere)
-_hour = None
-try:
-    from streamlit_js_eval import streamlit_js_eval
-    _local_hour = streamlit_js_eval(
-        js_expressions="new Date().getHours()",
-        key="user_local_hour",
-        want_output=True,
-    )
-    if _local_hour is not None:
-        _hour = int(_local_hour)
-except Exception:
-    pass
-
-# Fallback: try server timezone, then UTC
-if _hour is None:
-    try:
-        from zoneinfo import ZoneInfo
-        _hour = datetime.now(ZoneInfo("UTC")).hour
-    except Exception:
-        _hour = datetime.utcnow().hour
+# Server-side hour fallback (UTC); browser JS will overwrite the greeting client-side
+_hour = datetime.utcnow().hour
 _name_safe = _html.escape(user.get("name") or "")
 _first     = _html.escape((_name_safe or "there").split()[0])
 
@@ -301,10 +282,44 @@ avg_health = int(sum(p.get("health_score", 0) or 0 for p in projects) / max(len(
 
 col_hero, col_pulse = st.columns([6, 3])
 with col_hero:
-    st.markdown(f'<h1 class="dash-greeting">{_greeting}</h1><p class="dash-micro">{_micro}</p>', unsafe_allow_html=True)
+    st.markdown(
+        f'<h1 class="dash-greeting" id="pv-greeting">{_greeting}</h1>'
+        f'<p class="dash-micro" id="pv-micro">{_micro}</p>',
+        unsafe_allow_html=True,
+    )
 with col_pulse:
     st.markdown('<div style="height:0.35rem;"></div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="pulse-pill"><span class="pulse-icon">{_pulse_icon}</span><div class="pulse-meta"><span class="pulse-lbl">Productivity Pulse</span><span class="pulse-val">{avg_health}% Healthy</span></div></div>', unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="pulse-pill"><span class="pulse-icon" id="pv-pulse-icon">{_pulse_icon}</span>'
+        f'<div class="pulse-meta"><span class="pulse-lbl">Productivity Pulse</span>'
+        f'<span class="pulse-val">{avg_health}% Healthy</span></div></div>',
+        unsafe_allow_html=True,
+    )
+
+# Client-side: rewrite greeting to reflect user's actual local time
+_first_safe = _first.replace("'", "\\'")
+st.markdown(f"""<script>
+(function() {{
+    const update = () => {{
+        const doc = window.parent.document;
+        const g = doc.getElementById('pv-greeting');
+        const m = doc.getElementById('pv-micro');
+        const p = doc.getElementById('pv-pulse-icon');
+        if (!g || !m) {{ setTimeout(update, 200); return; }}
+        const h = new Date().getHours();
+        let greet, micros, icon;
+        if (h < 5)        {{ greet = "Still up, {_first_safe}?";              micros = ["Night owl spotted. The best ideas come after midnight.", "Not kept working late nights, I see.", "The world's asleep — this is your edge.", "Late nights and big dreams. Respect."]; icon = "🌙"; }}
+        else if (h < 12)  {{ greet = "Good morning, {_first_safe}";           micros = ["Early start. Your projects are grateful.", "Fresh day, fresh momentum. Let's go.", "The best builders start before the world wakes up.", "Morning clarity is a superpower. Use it."]; icon = "☀️"; }}
+        else if (h < 17)  {{ greet = "Good afternoon, {_first_safe}";         micros = ["Deep work hours. Make them count.", "Every update brings you closer to launch.", "Clarity builds momentum. Keep going.", "Your work is tracked, your progress is real."]; icon = "🌤️"; }}
+        else if (h < 21)  {{ greet = "Good evening, {_first_safe}";           micros = ["Wrapping up strong. Log your wins.", "End of day check-in. How did it go?", "Evening reflection fuels tomorrow.", "The best teams review before they rest."]; icon = "🌆"; }}
+        else              {{ greet = "Burning the midnight oil, {_first_safe}?"; micros = ["Late night mode. The quiet hours hit different.", "Still here? Your projects appreciate the dedication.", "Night shifts build empires.", "Almost tomorrow. Make this session count."]; icon = "🌙"; }}
+        g.textContent = greet;
+        m.textContent = micros[h % micros.length];
+        if (p) p.textContent = icon;
+    }};
+    update();
+}})();
+</script>""", unsafe_allow_html=True)
 
 # Modals
 if st.session_state.get("show_new_project_modal"):
