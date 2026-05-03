@@ -645,3 +645,65 @@ div[data-testid="stToast"] {
 }
 
 *, *::before, *::after { animation: none !important; animation-delay: 0s !important; }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Mobile responsive fixes — phones and small tablets
+   ════════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* Reduce container padding so content uses full width */
+  .block-container {
+    padding-left:  1rem !important;
+    padding-right: 1rem !important;
+    padding-top:   1rem !important;
+    max-width:     100% !important;
+  }
+
+  /* Force any st.columns row to stack vertically */
+  [data-testid="stHorizontalBlock"] {
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+  }
+  [data-testid="stHorizontalBlock"] > [data-testid="column"] {
+    width:      100% !important;
+    flex:       1 1 100% !important;
+    min-width:  0 !important;
+  }
+
+  /* Greeting heading — smaller on mobile */
+  .dash-greeting { font-size: 1.5rem !important; line-height: 1.25 !important; }
+  .dash-micro    { font-size: 0.8rem !important; }
+
+  /* Pulse pill scales down */
+  .pulse-pill { padding: 0.5rem 0.85rem !important; }
+  .pulse-val  { font-size: 1.1rem !important; }
+
+  /* Featured card visual smaller */
+  .feat-visual { height: 80px !important; }
+  .feat-title  { font-size: 1rem !important; }
+  .feat-desc   { font-size: 0.75rem !important; }
+
+  /* Project rows — let score wrap below if needed */
+  .proj-row {
+    padding: 0.75rem 0.85rem !important;
+  }
+  .proj-row-name  { font-size: 0.85rem !important; }
+  .proj-row-score { font-size: 1.1rem !important; }
+  .proj-prog-wrap { width: 48px !important; }
+
+  /* Tighter section labels */
+  .pv-section-hdr, .sec-lbl { font-size: 0.6rem !important; }
+
+  /* Form inputs comfortable for touch */
+  div[data-baseweb="input"] input,
+  div[data-baseweb="textarea"] textarea {
+    font-size: 16px !important; /* prevents iOS auto-zoom */
+  }
+
+  /* Buttons taller for touch */
+  div.stButton > button {
+    min-height: 40px !important;
+  }
+
+  /* Hide some decorative elements that crowd small screens */
+  .energy-bars { display: none !important; }
+}
