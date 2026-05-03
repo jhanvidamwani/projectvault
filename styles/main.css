@@ -658,15 +658,21 @@ div[data-testid="stToast"] {
     max-width:     100% !important;
   }
 
-  /* Force any st.columns row to stack vertically */
-  [data-testid="stHorizontalBlock"] {
+  /* Force main-area columns to stack vertically (NOT sidebar columns) */
+  section.main [data-testid="stHorizontalBlock"],
+  [data-testid="stAppViewContainer"] section[tabindex] [data-testid="stHorizontalBlock"] {
     flex-direction: column !important;
     gap: 0.75rem !important;
   }
-  [data-testid="stHorizontalBlock"] > [data-testid="column"] {
+  section.main [data-testid="stHorizontalBlock"] > [data-testid="column"],
+  [data-testid="stAppViewContainer"] section[tabindex] [data-testid="stHorizontalBlock"] > [data-testid="column"] {
     width:      100% !important;
     flex:       1 1 100% !important;
     min-width:  0 !important;
+  }
+  /* Sidebar columns must stay horizontal */
+  [data-testid="stSidebar"] [data-testid="stHorizontalBlock"] {
+    flex-direction: row !important;
   }
 
   /* Greeting heading — smaller on mobile */
