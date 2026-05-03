@@ -87,25 +87,55 @@ st.markdown("""<style>
 .feat-prog-bar { height: 100%; background: linear-gradient(90deg, #D4543F, #C4A882); border-radius: 999px; }
 .feat-link { font-size: 0.78rem; font-weight: 600; color: #E07060; text-decoration: none; }
 
-/* Project row */
+/* Project row — compact stacked layout */
 .proj-row {
-    display: flex; align-items: center; justify-content: space-between;
+    display: flex; align-items: center; gap: 0.5rem;
     background: #FFFFFF; border: 1px solid rgba(142,94,78,0.18);
-    border-radius: 14px; padding: 0.9rem 1.1rem; margin-bottom: 0.55rem;
+    border-radius: 14px; padding: 0.85rem 1rem; margin-bottom: 0.5rem;
     box-shadow: 0 2px 7px rgba(142,94,78,0.08);
     transition: border-color 150ms ease, box-shadow 150ms ease;
+    min-width: 0;
 }
 .proj-row:hover { border-color: rgba(224,112,96,0.4); box-shadow: 0 4px 14px rgba(142,94,78,0.12); }
-.proj-row-left { flex: 1; min-width: 0; }
-.proj-row-name { font-size: 0.88rem; font-weight: 600; color: #2C1810; letter-spacing: -0.15px; margin-bottom: 0.15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.proj-row-meta { display: flex; align-items: center; gap: 0.35rem; }
+.proj-row-left { flex: 1 1 auto; min-width: 0; overflow: hidden; }
+.proj-row-name {
+    font-size: 0.88rem; font-weight: 600; color: #2C1810;
+    letter-spacing: -0.15px; margin-bottom: 0.2rem;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: 100%;
+}
+.proj-row-meta {
+    display: flex; align-items: center; gap: 0.3rem;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    flex-wrap: nowrap;
+}
 .proj-row-dot { width: 5px; height: 5px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
-.proj-row-status { font-size: 0.72rem; font-weight: 600; }
-.proj-row-time { font-size: 0.7rem; color: #A88F87; }
-.proj-row-tags { display: flex; gap: 0.25rem; margin-top: 0.3rem; flex-wrap: wrap; }
-.proj-row-tag { font-size: 0.56rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #8E5E4E; background: #FFE4D8; border: 1px solid rgba(232,141,125,0.35); border-radius: 999px; padding: 1px 7px; }
-.proj-row-score { font-size: 1.3rem; font-weight: 700; letter-spacing: -0.5px; flex-shrink: 0; margin: 0 0.75rem; }
-.proj-prog-wrap { width: 80px; height: 6px; background: rgba(142,94,78,0.08); border-radius: 999px; overflow: hidden; flex-shrink: 0; }
+.proj-row-status { font-size: 0.7rem; font-weight: 600; flex-shrink: 0; }
+.proj-row-time { font-size: 0.68rem; color: #A88F87; overflow: hidden; text-overflow: ellipsis; }
+.proj-row-tags {
+    display: flex; gap: 0.25rem; margin-top: 0.3rem;
+    flex-wrap: nowrap; overflow: hidden;
+}
+.proj-row-tag {
+    font-size: 0.55rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: #8E5E4E; background: #FFE4D8;
+    border: 1px solid rgba(232,141,125,0.35); border-radius: 999px;
+    padding: 1px 7px; flex-shrink: 0;
+    max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* Right side: stack score + bar vertically so they never overlap text */
+.proj-row-right {
+    display: flex; flex-direction: column; align-items: flex-end;
+    gap: 0.3rem; flex-shrink: 0; margin-left: 0.5rem;
+}
+.proj-row-score {
+    font-size: 1.25rem; font-weight: 700; letter-spacing: -0.5px;
+    line-height: 1;
+}
+.proj-prog-wrap {
+    width: 56px; height: 5px; background: rgba(142,94,78,0.08);
+    border-radius: 999px; overflow: hidden;
+}
 .proj-prog-fill { height: 100%; border-radius: 999px; }
 
 /* Focus card */
@@ -401,8 +431,10 @@ with col_energy:
                 f'</div>'
                 f'{tag_row}'
                 f'</div>'
+                f'<div class="proj-row-right">'
                 f'<div class="proj-row-score" style="color:{h_clr};">{health}</div>'
                 f'<div class="proj-prog-wrap"><div class="proj-prog-fill" style="width:{health}%;background:{h_clr};"></div></div>'
+                f'</div>'
                 f'</div>',
                 unsafe_allow_html=True,
             )
