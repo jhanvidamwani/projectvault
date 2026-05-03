@@ -1,7 +1,7 @@
 import os
 import re
 import html as _html
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
 import streamlit as st
 
@@ -225,7 +225,13 @@ total_updates   = len(get_recent_updates_for_user(project_ids, limit=200)) if pr
 render_sidebar(user, active="dashboard", projects=projects)
 
 # ── Hero ───────────────────────────────────────────────────────────────────────
-_hour      = datetime.now().hour
+try:
+    from zoneinfo import ZoneInfo
+    _user_tz = ZoneInfo(os.getenv("USER_TZ", "Asia/Kolkata"))
+    _hour    = datetime.now(_user_tz).hour
+except Exception:
+    # Fallback: UTC + 5:30 for IST
+    _hour = (datetime.now(timezone.utc) + timedelta(hours=5, minutes=30)).hour
 _name_safe = _html.escape(user.get("name") or "")
 _first     = _html.escape((_name_safe or "there").split()[0])
 
