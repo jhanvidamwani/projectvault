@@ -61,26 +61,28 @@ st.markdown("""<style>
     height: 1rem; display: flex; align-items: center;
 }
 
-/* Featured project card */
+/* Featured project card — compact for vertical balance */
 .feat-card {
     background: #FFFFFF; border: 1px solid rgba(142,94,78,0.2);
-    border-radius: 20px; overflow: hidden;
+    border-radius: 16px; overflow: hidden;
     box-shadow: 0 3px 14px rgba(142,94,78,0.1);
     margin-bottom: 0;
 }
 .feat-visual {
-    height: 110px; position: relative; overflow: hidden;
+    height: 70px; position: relative; overflow: hidden;
     background: linear-gradient(135deg, #E07060 0%, #C4A882 60%, #FFE4D8 100%);
-    display: flex; align-items: flex-end; padding: 0.85rem 1rem;
+    display: flex; align-items: flex-end; padding: 0.6rem 0.85rem;
 }
 .feat-badge {
     font-size: 0.58rem; font-weight: 700; text-transform: uppercase;
     letter-spacing: 0.1em; background: #FFFFFF; color: #E07060;
     border-radius: 999px; padding: 3px 10px; display: inline-block;
 }
-.feat-body { padding: 1rem 1.2rem 1.2rem; }
-.feat-title { font-size: 1.1rem; font-weight: 700; color: #2C1810; letter-spacing: -0.3px; margin: 0 0 0.25rem; line-height: 1.2; }
-.feat-desc { font-size: 0.78rem; color: #7A6560; line-height: 1.55; margin: 0 0 0.8rem; }
+.feat-body { padding: 0.85rem 1rem 1rem; }
+.feat-title { font-size: 1rem; font-weight: 700; color: #2C1810; letter-spacing: -0.3px; margin: 0 0 0.2rem; line-height: 1.2; }
+.feat-desc { font-size: 0.75rem; color: #7A6560; line-height: 1.5; margin: 0 0 0.6rem;
+             display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+             overflow: hidden; }
 .feat-prog-lbl { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem; }
 .feat-prog-lbl span { font-size: 0.58rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #A88F87; }
 .feat-prog-wrap { background: rgba(142,94,78,0.1); border-radius: 999px; height: 7px; overflow: hidden; }
@@ -226,7 +228,7 @@ if _gdrive_code and _gdrive_state == "gdrive_import" and not st.session_state.ge
 projects        = get_projects_for_user(user["id"])
 project_ids     = [p["id"] for p in projects] if projects else []
 project_map     = {p["id"]: _clean(p.get("title", "")) for p in projects}
-recent_updates  = get_recent_updates_for_user(project_ids, limit=8)  if project_ids else []
+recent_updates  = get_recent_updates_for_user(project_ids, limit=12) if project_ids else []
 milestones      = get_milestones_for_user(project_ids, limit=6)      if project_ids else []
 total_updates   = len(get_recent_updates_for_user(project_ids, limit=200)) if project_ids else 0
 
@@ -413,7 +415,7 @@ with col_feat:
 
         st.markdown(
             f'<div class="feat-card">'
-            f'<div class="feat-visual" style="height:100px;background:linear-gradient(135deg,#{g1} 0%,#{g2} 100%);">'
+            f'<div class="feat-visual" style="background:linear-gradient(135deg,#{g1} 0%,#{g2} 100%);">'
             f'<span class="feat-badge">{fp_tag1}</span>'
             f'</div>'
             f'<div class="feat-body">'
@@ -436,12 +438,37 @@ with col_energy:
         sorted(active_projects, key=lambda p: -(p.get("health_score") or 0))
         + sorted(other_projects, key=lambda p: -(p.get("health_score") or 0))
     )
-    active_cnt = len(active_projects)
+    total_cnt   = len(projects)
+    active_cnt  = len(active_projects)
+    completed_cnt = sum(1 for p in projects if p.get("status") == "completed")
+    paused_cnt    = sum(1 for p in projects if p.get("status") == "paused")
     st.markdown(
         f'<div class="sec-lbl">All Projects'
         f'<span style="margin-left:0.5rem;font-size:0.55rem;background:rgba(224,112,96,0.12);'
         f'color:#E07060;border-radius:999px;padding:1px 7px;font-weight:700;">'
-        f'{active_cnt} active</span></div>',
+        f'{total_cnt} total</span></div>',
+        unsafe_allow_html=True,
+    )
+
+    # Quick stats summary at top of column to fill vertical space
+    st.markdown(
+        f'<div style="display:flex;gap:0.5rem;margin-bottom:0.75rem;">'
+        f'<div style="flex:1;background:#FFFFFF;border:1px solid rgba(142,94,78,0.18);'
+        f'border-radius:10px;padding:0.55rem 0.75rem;text-align:center;">'
+        f'<div style="font-size:1.1rem;font-weight:700;color:#E07060;line-height:1;">{active_cnt}</div>'
+        f'<div style="font-size:0.55rem;color:#A88F87;text-transform:uppercase;letter-spacing:0.08em;font-weight:600;margin-top:2px;">Active</div>'
+        f'</div>'
+        f'<div style="flex:1;background:#FFFFFF;border:1px solid rgba(142,94,78,0.18);'
+        f'border-radius:10px;padding:0.55rem 0.75rem;text-align:center;">'
+        f'<div style="font-size:1.1rem;font-weight:700;color:#8E5E4E;line-height:1;">{completed_cnt}</div>'
+        f'<div style="font-size:0.55rem;color:#A88F87;text-transform:uppercase;letter-spacing:0.08em;font-weight:600;margin-top:2px;">Completed</div>'
+        f'</div>'
+        f'<div style="flex:1;background:#FFFFFF;border:1px solid rgba(142,94,78,0.18);'
+        f'border-radius:10px;padding:0.55rem 0.75rem;text-align:center;">'
+        f'<div style="font-size:1.1rem;font-weight:700;color:#C4A882;line-height:1;">{paused_cnt}</div>'
+        f'<div style="font-size:0.55rem;color:#A88F87;text-transform:uppercase;letter-spacing:0.08em;font-weight:600;margin-top:2px;">Paused</div>'
+        f'</div>'
+        f'</div>',
         unsafe_allow_html=True,
     )
 
@@ -511,7 +538,7 @@ with col_focus:
             f'</div>'
         )
 
-    rows = "".join(_focus_row(u) for u in recent_updates[:6])
+    rows = "".join(_focus_row(u) for u in recent_updates[:10])
     empty = '<div style="text-align:center;padding:1.5rem 0;color:#A88F87;font-size:0.8rem;">No activity yet.</div>'
     st.markdown(
         f'<div class="focus-card"><div class="focus-hdr">Recent Activity</div>{rows or empty}</div>',
