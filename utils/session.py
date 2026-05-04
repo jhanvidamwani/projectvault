@@ -91,9 +91,11 @@ def init_session() -> None:
         st.switch_page("pages/1_login.py")
         return
 
-    # Phase 1: no session, no params — JS reads cookies and redirects with tokens
+    # Phase 1: no session, no params — try JS cookie restore, then fall back to login
+    # The JS injection sometimes fails on Streamlit Cloud (cross-origin iframe sandbox)
+    # so we always redirect to login via Python — login page also tries cookie restore
     stc.html(f"<script>{_JS_RESTORE}</script>", height=0)
-    st.stop()
+    st.switch_page("pages/1_login.py")
 
 
 def require_auth() -> None:
