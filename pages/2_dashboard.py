@@ -66,12 +66,12 @@ st.markdown("""<style>
     background: #FFFFFF; border: 1px solid rgba(142,94,78,0.2);
     border-radius: 20px; overflow: hidden;
     box-shadow: 0 3px 14px rgba(142,94,78,0.1);
-    height: 100%;
+    margin-bottom: 0;
 }
 .feat-visual {
-    height: 160px; position: relative; overflow: hidden;
+    height: 110px; position: relative; overflow: hidden;
     background: linear-gradient(135deg, #E07060 0%, #C4A882 60%, #FFE4D8 100%);
-    display: flex; align-items: flex-end; padding: 1rem;
+    display: flex; align-items: flex-end; padding: 0.85rem 1rem;
 }
 .feat-badge {
     font-size: 0.58rem; font-weight: 700; text-transform: uppercase;
@@ -142,7 +142,7 @@ st.markdown("""<style>
 .focus-card {
     background: #FFFFFF; border: 1px solid rgba(142,94,78,0.2);
     border-radius: 20px; padding: 1.1rem 1.25rem;
-    box-shadow: 0 2px 10px rgba(142,94,78,0.09); height: 100%;
+    box-shadow: 0 2px 10px rgba(142,94,78,0.09);
 }
 .focus-hdr { font-size: 0.78rem; font-weight: 600; color: #2C1810; margin-bottom: 0.8rem; }
 .focus-row { display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.55rem 0; border-bottom: 1px solid rgba(142,94,78,0.06); }
@@ -154,6 +154,15 @@ st.markdown("""<style>
 .focus-text { font-size: 0.8rem; color: #2C1810; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .focus-proj { font-size: 0.67rem; color: #A88F87; margin-top: 0.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .focus-time { font-size: 0.6rem; font-weight: 600; color: #E07060; background: rgba(232,141,125,0.1); border-radius: 999px; padding: 2px 7px; flex-shrink: 0; margin-top: 2px; white-space: nowrap; }
+
+/* Tighten dashboard column spacing — featured cards flow with their buttons */
+section.main [data-testid="stVerticalBlock"] [data-testid="stVerticalBlock"] {
+    gap: 0.5rem !important;
+}
+section.main [data-testid="column"] div.stButton {
+    margin-top: 0.4rem !important;
+    margin-bottom: 0.6rem !important;
+}
 
 /* Timeline bottom */
 .tl-section {
@@ -415,12 +424,9 @@ with col_feat:
             f'</div></div>',
             unsafe_allow_html=True,
         )
-        st.markdown('<div style="height:0.3rem;"></div>', unsafe_allow_html=True)
-        if st.button(f"View Project →", key=f"feat_open_{fp_pid}", use_container_width=True, type="primary"):
+        if st.button("View Project →", key=f"feat_open_{fp_pid}", use_container_width=True, type="primary"):
             st.session_state["current_project"] = fp_pid
             st.switch_page("pages/3_project.py")
-        if _fi < len(active_projects) - 1:
-            st.markdown('<div style="height:0.75rem;"></div>', unsafe_allow_html=True)
 
 # ─── All Projects ──────────────────────────────────────────────────────────────
 with col_energy:
@@ -513,7 +519,7 @@ with col_focus:
     )
 
 # ── Bottom row — Timeline + Stats ──────────────────────────────────────────────
-st.markdown('<div style="height:1.25rem;"></div>', unsafe_allow_html=True)
+st.markdown('<div style="height:0.5rem;"></div>', unsafe_allow_html=True)
 
 # ── Bottom — Timeline full width ───────────────────────────────────────────────
 tl_items = (milestones or recent_updates)[:6]
