@@ -127,3 +127,4 @@ API keys can be added globally via `.env` or per-session in **Settings → API K
 ---
 
 *Built by Jhanvi Damwani · Powered by Anthropic Claude, Supabase, and Streamlit*
+
