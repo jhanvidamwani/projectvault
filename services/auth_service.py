@@ -183,7 +183,9 @@ def handle_signup(email: str, password: str, name: str) -> tuple[bool, str]:
     try:
         response = sign_up(email, password, name)
         if response.user:
-            # Email confirmation required — no session yet, that's fine
+            if response.session:
+                _set_session_from_response(response)
+                _ensure_user_profile(response)
             return True, ""
         return False, "Signup failed. Please try again."
     except Exception as e:

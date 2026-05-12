@@ -147,10 +147,13 @@ with tab_signup:
             with st.spinner("Creating your account..."):
                 success, error = handle_signup(email_s.strip(), password_s, name.strip())
             if success:
-                st.markdown(
-                    '<p style="color:#E88D7D;font-size:0.8rem;margin-top:0.5rem;">Account created! Check your email to confirm, then sign in.</p>',
-                    unsafe_allow_html=True,
-                )
+                if st.session_state.get("user"):
+                    st.switch_page("app.py")
+                else:
+                    st.markdown(
+                        '<p style="color:#E88D7D;font-size:0.8rem;margin-top:0.5rem;">Account created! You can sign in now.</p>',
+                        unsafe_allow_html=True,
+                    )
             else:
                 st.markdown(
                     f'<p style="color:#CF6F61;font-size:0.8rem;margin-top:0.5rem;">{error}</p>',
