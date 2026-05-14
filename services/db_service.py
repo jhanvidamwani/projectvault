@@ -282,3 +282,152 @@ def get_retrospectives(project_id: str) -> list[dict]:
         .execute()
     )
     return response.data
+
+
+# ============================================================
+# UPDATE TYPE COUNTS (milestones / blockers / pivots / decisions / notes)
+# ============================================================
+
+def get_update_type_counts(project_id: str) -> dict:
+    """Return counts of each update_type for a project: {milestone: n, blocker: n, pivot: n, decision: n, note: n}."""
+    admin = get_supabase_admin()
+    rows = admin.table("updates").select("update_type").eq("project_id", project_id).execute().data or []
+    counts = {"milestone": 0, "blocker": 0, "pivot": 0, "decision": 0, "note": 0}
+    for r in rows:
+        t = r.get("update_type") or "note"
+        if t in counts:
+            counts[t] += 1
+    return counts
+
+
+# ============================================================
+# CHECKLISTS
+# ============================================================
+
+def get_checklist_items(project_id: str) -> list[dict]:
+    admin = get_supabase_admin()
+    response = (
+        admin.table("checklists")
+        .select("*")
+        .eq("project_id", project_id)
+        .order("is_done")
+        .order("deadline", desc=False, nullsfirst=False)
+        .order("created_at", desc=False)
+        .execute()
+    )
+    return response.data or []
+
+
+def add_checklist_item(project_id: str, title: str, deadline: Optional[str] = None, created_by: Optional[str] = None) -> dict:
+    admin = get_supabase_admin()
+    data = {"project_id": project_id, "title": title, "is_done": False}
+    if deadline:
+        data["deadline"] = deadline
+    if created_by:
+        data["created_by"] = created_by
+    response = admin.table("checklists").insert(data).execute()
+    return response.data[0]
+
+
+def update_checklist_item(item_id: str, updates: dict) -> dict:
+    admin = get_supabase_admin()
+    if updates.get("is_done") is True and "completed_at" not in updates:
+        from datetime import datetime, timezone
+        updates["completed_at"] = datetime.now(timezone.utc).isoformat()
+    if updates.get("is_done") is False:
+        updates["completed_at"] = None
+    response = admin.table("checklists").update(updates).eq("id", item_id).execute()
+    return response.data[0] if response.data else {}
+
+
+def delete_checklist_item(item_id: str) -> None:
+    admin = get_supabase_admin()
+    admin.table("checklists").delete().eq("id", item_id).execute()
+
+
+# ============================================================
+# DEADLINE HEALTH HELPERS
+# ============================================================
+
+def compute_auto_health(project_id: str, project: Optional[dict] = None) -> str:
+    """Return 'green' | 'yellow' | 'red' derived from blockers, overdue deadlines, and checklist state.
+
+    Rules:
+      - red    if any open blocker exists, OR project deadline is overdue,
+               OR an unfinished checklist item is overdue.
+      - yellow if project or an unfinished checklist item is due within 7 days,
+               OR health_score < 50.
+      - green  otherwise.
+    """
+    from datetime import date, datetime
+    admin = get_supabase_admin()
+    project = project or get_project(project_id)
+    if not project:
+        return "green"
+
+    today = date.today()
+
+    def _parse_date(s):
+        if not s:
+            return None
+        try:
+            return datetime.fromisoformat(str(s)).date()
+        except Exception:
+            try:
+                return datetime.strptime(str(s)[:10], "%Y-%m-%d").date()
+            except Exception:
+                return None
+
+    # Open blockers? (recent blockers without a follow-up resolution — conservative: any blocker in last 30d)
+    blockers = (
+        admin.table("updates")
+        .select("created_at")
+        .eq("project_id", project_id)
+        .eq("update_type", "blocker")
+        .order("created_at", desc=True)
+        .limit(5)
+        .execute().data or []
+    )
+    has_recent_blocker = False
+    if blockers:
+        latest = _parse_date(blockers[0].get("created_at"))
+        if latest and (today - latest).days <= 30:
+            has_recent_blocker = True
+
+    proj_deadline = _parse_date(project.get("deadline"))
+    items = get_checklist_items(project_id)
+    open_items = [i for i in items if not i.get("is_done")]
+
+    # Red checks
+    if has_recent_blocker:
+        return "red"
+    if proj_deadline and proj_deadline < today:
+        return "red"
+    for i in open_items:
+        d = _parse_date(i.get("deadline"))
+        if d and d < today:
+            return "red"
+
+    # Yellow checks
+    if proj_deadline and (proj_deadline - today).days <= 7:
+        return "yellow"
+    for i in open_items:
+        d = _parse_date(i.get("deadline"))
+        if d and (d - today).days <= 7:
+            return "yellow"
+    score = project.get("health_score")
+    if score is not None and score < 50:
+        return "yellow"
+
+    return "green"
+
+
+def get_health_status(project_id: str, project: Optional[dict] = None) -> str:
+    """Return effective health: manual override if set, otherwise auto-computed."""
+    project = project or get_project(project_id)
+    if not project:
+        return "green"
+    override = project.get("health_status_override")
+    if override in ("green", "yellow", "red"):
+        return override
+    return compute_auto_health(project_id, project)

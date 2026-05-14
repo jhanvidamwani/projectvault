@@ -342,11 +342,68 @@ with col_health_area:
                 db.update_project(project_id, {"health_score": score, "health_explanation": explanation})
             st.rerun()
 
+# ── Status strip: health pill + deadline + type counts ─────────────────────────
+from datetime import date as _date, datetime as _dt
+_HEALTH_LABELS = {"green": ("On Track", "#1F7A4A", "rgba(31,122,74,0.10)"),
+                  "yellow": ("At Risk", "#8A6A1F", "rgba(196,168,130,0.18)"),
+                  "red":    ("Crisis",  "#A8311F", "rgba(207,111,97,0.15)")}
+_h_status = db.get_health_status(project_id, project)
+_h_label, _h_fg, _h_bg = _HEALTH_LABELS.get(_h_status, _HEALTH_LABELS["green"])
+
+_counts = db.get_update_type_counts(project_id)
+_count_pills = ""
+for _ct_key, _ct_label, _ct_fg, _ct_bg in [
+    ("milestone", "Milestones", "#7A5C30", "rgba(196,168,130,0.16)"),
+    ("blocker",   "Blockers",   "#8B3A2A", "rgba(207,111,97,0.12)"),
+    ("pivot",     "Pivots",     "#8E5E4E", "rgba(232,141,125,0.12)"),
+]:
+    _count_pills += (
+        f'<span style="display:inline-flex;align-items:center;gap:0.35rem;'
+        f'padding:3px 10px;border-radius:999px;font-size:0.72rem;font-weight:600;'
+        f'color:{_ct_fg};background:{_ct_bg};margin-right:6px;">'
+        f'{_ct_label} <span style="font-weight:700;">{_counts.get(_ct_key, 0)}</span></span>'
+    )
+
+_deadline_pill = ""
+_proj_deadline_raw = project.get("deadline")
+if _proj_deadline_raw:
+    try:
+        _dd = _dt.fromisoformat(str(_proj_deadline_raw)[:10]).date()
+        _days = (_dd - _date.today()).days
+        if _days < 0:
+            _dl_fg, _dl_bg, _dl_txt = "#A8311F", "rgba(207,111,97,0.15)", f"Overdue {abs(_days)}d"
+        elif _days == 0:
+            _dl_fg, _dl_bg, _dl_txt = "#A8311F", "rgba(207,111,97,0.15)", "Due today"
+        elif _days <= 7:
+            _dl_fg, _dl_bg, _dl_txt = "#8A6A1F", "rgba(196,168,130,0.18)", f"Due in {_days}d"
+        else:
+            _dl_fg, _dl_bg, _dl_txt = "#6B4A3E", "rgba(142,94,78,0.08)", f"Due in {_days}d"
+        _deadline_pill = (
+            f'<span style="display:inline-flex;align-items:center;gap:0.35rem;'
+            f'padding:3px 10px;border-radius:999px;font-size:0.72rem;font-weight:600;'
+            f'color:{_dl_fg};background:{_dl_bg};margin-right:6px;">'
+            f'📅 {_dl_txt} · {_dd.strftime("%b %d")}</span>'
+        )
+    except Exception:
+        pass
+
+_health_pill = (
+    f'<span style="display:inline-flex;align-items:center;gap:0.35rem;'
+    f'padding:3px 10px;border-radius:999px;font-size:0.72rem;font-weight:600;'
+    f'color:{_h_fg};background:{_h_bg};margin-right:6px;">●  {_h_label}</span>'
+)
+
+st.markdown(
+    f'<div style="margin-top:0.75rem;display:flex;flex-wrap:wrap;align-items:center;">'
+    f'{_health_pill}{_deadline_pill}{_count_pills}</div>',
+    unsafe_allow_html=True,
+)
+
 st.markdown('<div style="height:1px;background:rgba(142,94,78,0.12);margin:1.5rem 0 0;"></div>', unsafe_allow_html=True)
 
 # ── Tabs ──────────────────────────────────────────────────────────────────────
-tab_overview, tab_updates, tab_timeline, tab_files, tab_integrations, tab_retro, tab_report, tab_settings = st.tabs([
-    "Overview", "Updates", "Timeline", "Files", "Integrations", "Retrospective", "Report", "Settings",
+tab_overview, tab_checklist, tab_updates, tab_timeline, tab_files, tab_integrations, tab_retro, tab_report, tab_settings = st.tabs([
+    "Overview", "Checklist", "Updates", "Timeline", "Files", "Integrations", "Retrospective", "Report", "Settings",
 ])
 
 # ── Type chip helper ──────────────────────────────────────────────────────────
@@ -470,6 +527,92 @@ with tab_overview:
                     snap = snapshot_service.create_snapshot(project_id, user["id"])
                 st.success(f"Snapshot created: {snap['title']}")
                 st.rerun()
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CHECKLIST
+# ═══════════════════════════════════════════════════════════════════════════════
+with tab_checklist:
+    st.markdown(
+        '<div style="font-size:0.7rem;color:#A88F87;text-transform:uppercase;'
+        'letter-spacing:0.1em;font-weight:600;margin-bottom:0.75rem;">Checklist</div>',
+        unsafe_allow_html=True,
+    )
+
+    if can_edit:
+        with st.form("add_checklist_item", clear_on_submit=True):
+            c_title_col, c_date_col, c_btn_col = st.columns([5, 2, 1])
+            with c_title_col:
+                _new_item_title = st.text_input("Item", placeholder="What needs doing?", label_visibility="collapsed")
+            with c_date_col:
+                _new_item_deadline = st.date_input("Deadline", value=None, label_visibility="collapsed", format="YYYY-MM-DD")
+            with c_btn_col:
+                _add_item = st.form_submit_button("Add", use_container_width=True)
+            if _add_item:
+                if not _new_item_title.strip():
+                    st.error("Title required.")
+                else:
+                    db.add_checklist_item(
+                        project_id,
+                        _new_item_title.strip(),
+                        deadline=_new_item_deadline.isoformat() if _new_item_deadline else None,
+                        created_by=user["id"],
+                    )
+                    st.rerun()
+
+    _items = db.get_checklist_items(project_id)
+    if not _items:
+        st.markdown(
+            '<div class="empty-state" style="padding:2rem 0;">'
+            '<h3>No checklist items yet</h3>'
+            '<p>Add items above — each can have its own deadline. You\'ll get an email 7, 2, and 0 days before.</p></div>',
+            unsafe_allow_html=True,
+        )
+    else:
+        _today = _date.today()
+        for _item in _items:
+            _i_id   = _item["id"]
+            _i_done = bool(_item.get("is_done"))
+            _i_dl_raw = _item.get("deadline")
+            _i_dl = None
+            try:
+                _i_dl = _dt.fromisoformat(str(_i_dl_raw)[:10]).date() if _i_dl_raw else None
+            except Exception:
+                _i_dl = None
+
+            if _i_dl and not _i_done:
+                _days = (_i_dl - _today).days
+                if _days < 0:
+                    _dl_html = f'<span style="color:#A8311F;font-size:0.78rem;font-weight:600;">Overdue {abs(_days)}d · {_i_dl.strftime("%b %d")}</span>'
+                elif _days == 0:
+                    _dl_html = f'<span style="color:#A8311F;font-size:0.78rem;font-weight:600;">Due today</span>'
+                elif _days <= 7:
+                    _dl_html = f'<span style="color:#8A6A1F;font-size:0.78rem;">Due in {_days}d · {_i_dl.strftime("%b %d")}</span>'
+                else:
+                    _dl_html = f'<span style="color:#A88F87;font-size:0.78rem;">{_i_dl.strftime("%b %d")}</span>'
+            elif _i_dl and _i_done:
+                _dl_html = f'<span style="color:#A88F87;font-size:0.78rem;">{_i_dl.strftime("%b %d")}</span>'
+            else:
+                _dl_html = ''
+
+            cc1, cc2, cc3 = st.columns([0.5, 8, 1.2])
+            with cc1:
+                _checked = st.checkbox(" ", value=_i_done, key=f"chk_{_i_id}", label_visibility="collapsed", disabled=not can_edit)
+                if _checked != _i_done:
+                    db.update_checklist_item(_i_id, {"is_done": _checked})
+                    st.rerun()
+            with cc2:
+                _title_clean = _html.escape(_clean(_item.get("title", "")))
+                _style = "color:#A88F87;text-decoration:line-through;" if _i_done else "color:#2C1810;"
+                st.markdown(
+                    f'<div style="display:flex;align-items:center;gap:0.75rem;padding-top:0.3rem;">'
+                    f'<span style="{_style}font-size:0.95rem;">{_title_clean}</span>'
+                    f'{_dl_html}</div>',
+                    unsafe_allow_html=True,
+                )
+            with cc3:
+                if can_edit and st.button("Delete", key=f"del_chk_{_i_id}", use_container_width=True):
+                    db.delete_checklist_item(_i_id)
+                    st.rerun()
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # UPDATES
@@ -1172,6 +1315,23 @@ with tab_settings:
                 )
                 tags_str     = ", ".join(project.get("tags") or [])
                 new_tags_raw = st.text_input("Tags (comma-separated)", value=tags_str)
+
+                _cur_deadline = None
+                if project.get("deadline"):
+                    try:
+                        _cur_deadline = _dt.fromisoformat(str(project["deadline"])[:10]).date()
+                    except Exception:
+                        _cur_deadline = None
+                new_deadline = st.date_input("Deadline (optional)", value=_cur_deadline, format="YYYY-MM-DD")
+
+                _override_opts = ["Auto", "green", "yellow", "red"]
+                _cur_override = project.get("health_status_override") or "Auto"
+                new_override = st.selectbox(
+                    "Health status",
+                    _override_opts,
+                    index=_override_opts.index(_cur_override) if _cur_override in _override_opts else 0,
+                    help="Auto derives from blockers, deadlines, and health score. Override forces a color.",
+                )
                 if st.form_submit_button("Save Changes", type="primary"):
                     if not new_title.strip():
                         st.error("Name cannot be empty.")
@@ -1181,6 +1341,8 @@ with tab_settings:
                             "description": new_desc.strip(),
                             "status":      new_status,
                             "tags":        [t.strip() for t in new_tags_raw.split(",") if t.strip()],
+                            "deadline":    new_deadline.isoformat() if new_deadline else None,
+                            "health_status_override": None if new_override == "Auto" else new_override,
                         })
                         st.success("Saved!")
                         st.rerun()
